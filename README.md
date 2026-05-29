@@ -78,6 +78,8 @@ npm run build
 # Press F5 in VS Code to launch an Extension Development Host.
 ```
 
+For the full developer + release workflow, see [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md).
+
 ## License
 
 MIT — see [LICENSE](./LICENSE).
