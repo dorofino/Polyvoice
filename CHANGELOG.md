@@ -2,6 +2,9 @@
 
 All notable changes to Polyvoice will be documented in this file.
 
+## [0.1.15] - 2026-05-29
+
+- Add release pipeline script; slim VSIX (1198 -> ~306 files, 2.3MB -> 533KB)
 ## [0.1.0] — 2026-05-27
 
 Initial scaffold.

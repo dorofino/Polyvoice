@@ -2,7 +2,7 @@
   "name": "polyvoice",
   "displayName": "Polyvoice — Read Aloud (Native, OpenAI, Azure, ElevenLabs, xAI)",
   "description": "One extension, every voice provider. Select text, press a key, hear it read aloud — through native OS TTS or your favorite cloud voice (OpenAI, Azure AI Foundry, ElevenLabs, xAI Grok).",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "publisher": "dorofino",
   "license": "MIT",
   "engines": {
@@ -478,7 +478,11 @@
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
     "package": "vsce package",
-    "publish": "vsce publish"
+    "publish": "vsce publish",
+    "release": "pwsh -NoProfile -File scripts/release.ps1",
+    "release:patch": "pwsh -NoProfile -File scripts/release.ps1 -Bump patch",
+    "release:minor": "pwsh -NoProfile -File scripts/release.ps1 -Bump minor",
+    "release:major": "pwsh -NoProfile -File scripts/release.ps1 -Bump major"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",

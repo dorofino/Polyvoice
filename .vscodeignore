@@ -13,4 +13,16 @@ tsconfig.json
 **/*.ts
 **/.DS_Store
 node_modules/**
-!node_modules/microsoft-cognitiveservices-speech-sdk/**
+!node_modules/microsoft-cognitiveservices-speech-sdk/package.json
+!node_modules/microsoft-cognitiveservices-speech-sdk/LICENSE
+!node_modules/microsoft-cognitiveservices-speech-sdk/REDIST.txt
+!node_modules/microsoft-cognitiveservices-speech-sdk/distrib/lib/**/*.js
+!node_modules/microsoft-cognitiveservices-speech-sdk/node_modules/agent-base/package.json
+!node_modules/microsoft-cognitiveservices-speech-sdk/node_modules/agent-base/dist/**/*.js
+!node_modules/microsoft-cognitiveservices-speech-sdk/node_modules/https-proxy-agent/package.json
+!node_modules/microsoft-cognitiveservices-speech-sdk/node_modules/https-proxy-agent/dist/**/*.js
+
+# Repo tooling that doesn't belong in the VSIX
+scripts/**
+media/icon.png.bak
+CHANGELOG.bak
