@@ -1,0 +1,83 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/>
+<style>
+  body { font-family: var(--vscode-font-family); padding: 12px; color: var(--vscode-foreground); }
+  audio { width: 100%; margin-top: 8px; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:10px;
+          background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); font-size: 11px; }
+</style></head>
+<body>
+  <p><span class="pill" id="status">idle</span></p>
+  <audio id="a" autoplay controls></audio>
+  <script>
+    const vscode = acquireVsCodeApi();
+    const audio = document.getElementById('a');
+    const statusEl = document.getElementById('status');
+    let mediaSource = null, sourceBuffer = null, queue = [], ended = false;
+    let blobMode = false, blobMime = '', blobChunks = [], blobUrl = null;
+
+    function setStatus(s){ statusEl.textContent = s; }
+    function appendNext(){ if(!sourceBuffer || sourceBuffer.updating || queue.length===0) return;
+      sourceBuffer.appendBuffer(queue.shift()); }
+
+    function open(mime){
+      ended=false; queue=[]; blobChunks=[]; blobMode = false;
+      if (blobUrl) { try { URL.revokeObjectURL(blobUrl); } catch(e){} blobUrl = null; }
+      const canStream = window.MediaSource && MediaSource.isTypeSupported(mime);
+      if (!canStream) { blobMode = true; blobMime = mime; setStatus('buffering'); return; }
+      mediaSource = new MediaSource();
+      audio.src = URL.createObjectURL(mediaSource);
+      mediaSource.addEventListener('sourceopen', () => {
+        try {
+          sourceBuffer = mediaSource.addSourceBuffer(mime);
+          sourceBuffer.addEventListener('updateend', () => {
+            if (ended && queue.length === 0 && mediaSource.readyState === 'open') {
+              try { mediaSource.endOfStream(); } catch(e) {}
+            } else appendNext();
+          });
+        } catch(e) { vscode.postMessage({type:'error', message:'addSourceBuffer: '+e.message}); }
+      });
+      audio.play().catch((e) => vscode.postMessage({type:'error', message:'play: '+e.message})); setStatus('buffering');
+    }
+    function chunk(b64){
+      const bin = atob(b64), bytes = new Uint8Array(bin.length);
+      for (let i=0; i<bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      if (blobMode) { blobChunks.push(bytes); return; }
+      queue.push(bytes);
+      if (sourceBuffer && !sourceBuffer.updating) appendNext();
+      setStatus('playing');
+    }
+    function end(){ ended = true;
+      if (blobMode) {
+        const blob = new Blob(blobChunks, { type: blobMime });
+        blobUrl = URL.createObjectURL(blob);
+        audio.src = blobUrl;
+        audio.play().catch((e) => vscode.postMessage({type:'error', message:'play: '+e.message}));
+        return;
+      }
+      if (sourceBuffer && !sourceBuffer.updating && queue.length === 0) {
+        try { mediaSource.endOfStream(); } catch(e){}
+      }
+    }
+    function stop(){ try { audio.pause(); audio.removeAttribute('src'); audio.load(); } catch(e){}
+      if (blobUrl) { try { URL.revokeObjectURL(blobUrl); } catch(e){} blobUrl = null; }
+      setStatus('stopped');
+    }
+    function pauseResume(){ audio.paused ? audio.play() : audio.pause(); }
+
+    audio.addEventListener('ended', () => { setStatus('ended'); vscode.postMessage({type:'ended'}); });
+    audio.addEventListener('pause', () => { setStatus('paused'); vscode.postMessage({type:'paused'}); });
+    audio.addEventListener('play',  () => { setStatus('playing'); vscode.postMessage({type:'playing'}); });
+
+    window.addEventListener('message', e => {
+      const m = e.data;
+      if (m.type === 'open') open(m.mime);
+      else if (m.type === 'chunk') chunk(m.data);
+      else if (m.type === 'end') end();
+      else if (m.type === 'stop') stop();
+      else if (m.type === 'pauseResume') pauseResume();
+    });
+
+    vscode.postMessage({ type: 'ready' });
+  </script>
+</body></html>

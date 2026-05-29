@@ -1,0 +1,499 @@
+{
+  "name": "polyvoice",
+  "displayName": "Polyvoice — Read Aloud (Native, OpenAI, Azure, ElevenLabs, xAI)",
+  "description": "One extension, every voice provider. Select text, press a key, hear it read aloud — through native OS TTS or your favorite cloud voice (OpenAI, Azure AI Foundry, ElevenLabs, xAI Grok).",
+  "version": "0.1.13",
+  "publisher": "dorofino",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other",
+    "Education"
+  ],
+  "galleryBanner": {
+    "color": "#1f1147",
+    "theme": "dark"
+  },
+  "qna": "marketplace",
+  "keywords": [
+    "tts",
+    "text-to-speech",
+    "read-aloud",
+    "accessibility",
+    "speak",
+    "openai",
+    "azure",
+    "elevenlabs",
+    "xai",
+    "grok",
+    "voice"
+  ],
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dorofino/polyvoice.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dorofino/polyvoice/issues"
+  },
+  "homepage": "https://github.com/dorofino/polyvoice#readme",
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "polyvoice.readAloud",
+        "title": "Polyvoice: Read Aloud"
+      },
+      {
+        "command": "polyvoice.speakSelection",
+        "title": "Polyvoice: Speak Selection"
+      },
+      {
+        "command": "polyvoice.speakClipboard",
+        "title": "Polyvoice: Speak Clipboard"
+      },
+      {
+        "command": "polyvoice.speakDocument",
+        "title": "Polyvoice: Speak Whole Document"
+      },
+      {
+        "command": "polyvoice.stop",
+        "title": "Polyvoice: Stop"
+      },
+      {
+        "command": "polyvoice.pauseResume",
+        "title": "Polyvoice: Pause / Resume"
+      },
+      {
+        "command": "polyvoice.selectProvider",
+        "title": "Polyvoice: Select Provider"
+      },
+      {
+        "command": "polyvoice.selectVoice",
+        "title": "Polyvoice: Select Voice"
+      },
+      {
+        "command": "polyvoice.setApiKey",
+        "title": "Polyvoice: Set API Key for Provider"
+      },
+      {
+        "command": "polyvoice.setOpenAIKey",
+        "title": "Polyvoice: Set OpenAI API Key"
+      },
+      {
+        "command": "polyvoice.setElevenLabsKey",
+        "title": "Polyvoice: Set ElevenLabs API Key"
+      },
+      {
+        "command": "polyvoice.setAzureKey",
+        "title": "Polyvoice: Set Azure API Key"
+      },
+      {
+        "command": "polyvoice.setXaiKey",
+        "title": "Polyvoice: Set xAI API Key"
+      },
+      {
+        "command": "polyvoice.exportSelectionToAudio",
+        "title": "Polyvoice: Export Selection to Audio File"
+      },
+      {
+        "command": "polyvoice.clearCache",
+        "title": "Polyvoice: Clear Audio Cache"
+      },
+      {
+        "command": "polyvoice.configureShortcuts",
+        "title": "Polyvoice: Configure Keyboard Shortcuts"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "polyvoice.readAloud",
+        "key": "ctrl+alt+s",
+        "mac": "cmd+alt+s",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "polyvoice.stop",
+        "key": "ctrl+alt+x",
+        "mac": "cmd+alt+x"
+      },
+      {
+        "command": "polyvoice.pauseResume",
+        "key": "ctrl+alt+p",
+        "mac": "cmd+alt+p"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "polyvoice.readAloud",
+          "group": "polyvoice@1"
+        },
+        {
+          "command": "polyvoice.stop",
+          "group": "polyvoice@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "polyvoice.speakSelection",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "polyvoice.speakClipboard"
+        }
+      ]
+    },
+    "configuration": [
+      {
+        "title": "Polyvoice: General",
+        "order": 1,
+        "properties": {
+          "polyvoice.provider": {
+            "type": "string",
+            "default": "native",
+            "enum": [
+              "native",
+              "openai",
+              "azure",
+              "elevenlabs",
+              "xai"
+            ],
+            "enumDescriptions": [
+              "Built-in operating system TTS (free, offline, instant)",
+              "OpenAI gpt-4o-mini-tts (~$0.015/min)",
+              "Azure AI Foundry Speech ($15/M chars, 400+ voices)",
+              "ElevenLabs (highest quality, Flash v2.5 at 75ms)",
+              "xAI Grok TTS ($4.20/M chars, 5 voices)"
+            ],
+            "markdownDescription": "**Active TTS provider.** Only one provider is used at a time. You can save API keys for all five, but only this one is invoked when you press the read-aloud shortcut. The fastest way to switch is the **Polyvoice** item in the status bar (bottom right).",
+            "order": 1
+          },
+          "polyvoice.voice": {
+            "type": "string",
+            "default": "",
+            "markdownDescription": "Voice id for the active provider. Leave empty to use the provider's default. Run `Polyvoice: Select Voice` from the command palette to pick from the live catalog.",
+            "order": 2
+          },
+          "polyvoice.rate": {
+            "type": "number",
+            "default": 1,
+            "minimum": 0.5,
+            "maximum": 2,
+            "description": "Speech rate multiplier (0.5–2.0). Applies to every provider.",
+            "order": 3
+          },
+          "polyvoice.languageMap": {
+            "type": "object",
+            "default": {},
+            "markdownDescription": "Per-language voice override map, e.g. `{ \"es\": \"elevenlabs:21m00Tcm4TlvDq8ikWAM\", \"ja\": \"azure:ja-JP-NanamiNeural\" }`. Polyvoice picks the override when the active document is in that language.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "order": 4
+          }
+        }
+      },
+      {
+        "title": "Polyvoice: OpenAI",
+        "order": 2,
+        "properties": {
+          "polyvoice.openai.baseUrl": {
+            "type": "string",
+            "default": "https://api.openai.com/v1",
+            "markdownDescription": "🔑 **[Set OpenAI API Key →](command:polyvoice.setOpenAIKey)**  \n📝 Don't have one? **[Create a key at platform.openai.com →](https://platform.openai.com/api-keys)**  \n_Keys are stored encrypted in VS Code SecretStorage, never in settings.json._\n\nOpenAI-compatible base URL. Override for proxies, gateways, or Azure-OpenAI.",
+            "order": 1
+          },
+          "polyvoice.openai.model": {
+            "type": "string",
+            "default": "gpt-4o-mini-tts",
+            "enum": [
+              "gpt-4o-mini-tts",
+              "tts-1",
+              "tts-1-hd"
+            ],
+            "enumDescriptions": [
+              "gpt-4o-mini-tts — newest, steerable, ~$0.015/min",
+              "tts-1 — legacy fast model",
+              "tts-1-hd — legacy high-fidelity model"
+            ],
+            "description": "OpenAI TTS model id.",
+            "order": 2
+          }
+        }
+      },
+      {
+        "title": "Polyvoice: ElevenLabs",
+        "order": 3,
+        "properties": {
+          "polyvoice.elevenlabs.model": {
+            "type": "string",
+            "default": "eleven_flash_v2_5",
+            "enum": [
+              "eleven_flash_v2_5",
+              "eleven_turbo_v2_5",
+              "eleven_multilingual_v2"
+            ],
+            "enumDescriptions": [
+              "Flash v2.5 — fastest, ~75ms time-to-first-audio",
+              "Turbo v2.5 — fast and high quality",
+              "Multilingual v2 — highest quality, 29 languages"
+            ],
+            "markdownDescription": "🔑 **[Set ElevenLabs API Key →](command:polyvoice.setElevenLabsKey)**  \n📝 Don't have one? **[Create a key at elevenlabs.io →](https://elevenlabs.io/app/settings/api-keys)**  \n_Keys are stored encrypted in VS Code SecretStorage, never in settings.json._\n\nElevenLabs model id.",
+            "order": 1
+          },
+          "polyvoice.elevenlabs.outputFormat": {
+            "type": "string",
+            "default": "mp3_44100_128",
+            "enum": [
+              "mp3_44100_128",
+              "mp3_44100_64",
+              "mp3_22050_32"
+            ],
+            "enumDescriptions": [
+              "MP3 44.1 kHz / 128 kbps (highest quality)",
+              "MP3 44.1 kHz / 64 kbps",
+              "MP3 22.05 kHz / 32 kbps (lowest bandwidth)"
+            ],
+            "description": "ElevenLabs audio output format.",
+            "order": 2
+          }
+        }
+      },
+      {
+        "title": "Polyvoice: Azure AI Foundry",
+        "order": 4,
+        "properties": {
+          "polyvoice.azure.region": {
+            "type": "string",
+            "default": "eastus",
+            "markdownDescription": "🔑 **[Set Azure API Key →](command:polyvoice.setAzureKey)**  \n📝 Don't have one? **[Create a Speech resource in Azure Portal →](https://portal.azure.com/#create/Microsoft.CognitiveServicesSpeechServices)** then copy *Key 1* from *Keys and Endpoint*.  \n_Keys are stored encrypted in VS Code SecretStorage, never in settings.json._\n\nAzure Speech resource region (e.g. eastus, westeurope).",
+            "order": 1
+          },
+          "polyvoice.azure.voice": {
+            "type": "string",
+            "default": "en-US-AvaMultilingualNeural",
+            "enum": [
+              "en-US-Ava:DragonHDLatestNeural",
+              "en-US-Ava3:DragonHDLatestNeural",
+              "en-us-ava:DragonHDOmniLatestNeural",
+              "en-US-Andrew:DragonHDLatestNeural",
+              "en-US-Andrew3:DragonHDLatestNeural",
+              "en-US-Emma:DragonHDLatestNeural",
+              "en-US-Emma2:DragonHDLatestNeural",
+              "en-US-Brian:DragonHDLatestNeural",
+              "en-AU-Isla:MAI-Voice-2",
+              "de-DE-Mia:MAI-Voice-2",
+              "en-US-AvaMultilingualNeural",
+              "en-US-AndrewMultilingualNeural",
+              "en-US-EmmaMultilingualNeural",
+              "en-US-BrianMultilingualNeural",
+              "en-US-JennyNeural",
+              "en-US-GuyNeural",
+              "en-US-AriaNeural",
+              "en-US-DavisNeural",
+              "en-GB-SoniaNeural",
+              "en-GB-RyanNeural",
+              "en-GB-MiaNeural",
+              "en-AU-NatashaNeural",
+              "en-AU-WilliamNeural",
+              "es-ES-ElviraNeural",
+              "es-MX-DaliaNeural",
+              "fr-FR-DeniseNeural",
+              "fr-FR-HenriNeural",
+              "de-DE-KatjaNeural",
+              "de-DE-ConradNeural",
+              "it-IT-ElsaNeural",
+              "pt-BR-FranciscaNeural",
+              "ja-JP-NanamiNeural",
+              "ko-KR-SunHiNeural",
+              "zh-CN-XiaoxiaoNeural",
+              "zh-CN-YunxiNeural",
+              "ar-EG-SalmaNeural",
+              "hi-IN-SwaraNeural",
+              "ru-RU-SvetlanaNeural",
+              "tr-TR-EmelNeural"
+            ],
+            "enumDescriptions": [
+              "Ava — Dragon HD Latest, en-US female (HD pricing)",
+              "Ava3 — Dragon HD Latest, en-US female alt (HD pricing)",
+              "Ava — Dragon HD Omni Latest, en-US female multimodal (HD pricing)",
+              "Andrew — Dragon HD Latest, en-US male (HD pricing)",
+              "Andrew3 — Dragon HD Latest, en-US male alt (HD pricing)",
+              "Emma — Dragon HD Latest, en-US female (HD pricing)",
+              "Emma2 — Dragon HD Latest, en-US female alt (HD pricing)",
+              "Brian — Dragon HD Latest, en-US male (HD pricing)",
+              "Isla — MAI-Voice-2, en-AU female (limited regions, HD pricing)",
+              "Mia — MAI-Voice-2, de-DE female (limited regions, HD pricing)",
+              "Ava — en-US female, multilingual (recommended default, standard pricing)",
+              "Andrew — en-US male, multilingual",
+              "Emma — en-US female, multilingual",
+              "Brian — en-US male, multilingual",
+              "Jenny — en-US female, assistant style",
+              "Guy — en-US male, news/casual",
+              "Aria — en-US female, conversational",
+              "Davis — en-US male, conversational",
+              "Sonia — en-GB female",
+              "Ryan — en-GB male",
+              "Mia — en-GB female",
+              "Natasha — en-AU female",
+              "William — en-AU male",
+              "Elvira — es-ES female",
+              "Dalia — es-MX female",
+              "Denise — fr-FR female",
+              "Henri — fr-FR male",
+              "Katja — de-DE female",
+              "Conrad — de-DE male",
+              "Elsa — it-IT female",
+              "Francisca — pt-BR female",
+              "Nanami — ja-JP female",
+              "SunHi — ko-KR female",
+              "Xiaoxiao — zh-CN female",
+              "Yunxi — zh-CN male",
+              "Salma — ar-EG female",
+              "Swara — hi-IN female",
+              "Svetlana — ru-RU female",
+              "Emel — tr-TR female"
+            ],
+            "markdownDescription": "Default Azure neural voice. Overridden by the global `#polyvoice.voice#` setting when that is non-empty.\n\n⚠️ Voice availability depends on your Speech resource's **region**. If a voice errors with *'speaker not supported'*, the voice isn't deployed in your region — pick a different one or change `#polyvoice.azure.region#`.\n\n🔍 **Want the full live catalog (500+ voices) for *your* region?** Run **`Polyvoice: Select Voice`** from the Command Palette — it queries Azure directly so it always shows exactly what's available to you, including brand-new releases.",
+            "order": 2
+          },
+          "polyvoice.azure.endpoint": {
+            "type": "string",
+            "default": "",
+            "description": "Optional Azure custom endpoint (e.g. a Custom Neural Voice deployment URL). Leave empty to use the regional default.",
+            "order": 3
+          }
+        }
+      },
+      {
+        "title": "Polyvoice: xAI Grok",
+        "order": 5,
+        "properties": {
+          "polyvoice.xai.baseUrl": {
+            "type": "string",
+            "default": "https://api.x.ai/v1",
+            "markdownDescription": "🔑 **[Set xAI API Key →](command:polyvoice.setXaiKey)**  \n📝 Don't have one? **[Create a key at console.x.ai →](https://console.x.ai/team/default/api-keys)**  \n_Keys are stored encrypted in VS Code SecretStorage, never in settings.json._\n\nxAI API base URL.",
+            "order": 1
+          },
+          "polyvoice.xai.voice": {
+            "type": "string",
+            "default": "eve",
+            "enum": [
+              "eve",
+              "ara",
+              "rex",
+              "sal",
+              "leo"
+            ],
+            "enumDescriptions": [
+              "Eve — female, energetic and upbeat (default)",
+              "Ara — female, warm and friendly",
+              "Rex — male, confident and clear",
+              "Sal — neutral, smooth and balanced",
+              "Leo — male, authoritative and strong"
+            ],
+            "description": "Default xAI Grok voice. Overridden by the global `polyvoice.voice` setting when that is non-empty.",
+            "order": 2
+          },
+          "polyvoice.xai.language": {
+            "type": "string",
+            "default": "auto",
+            "enum": [
+              "auto",
+              "en",
+              "ar-EG",
+              "ar-SA",
+              "ar-AE",
+              "bn",
+              "zh",
+              "fr",
+              "de",
+              "hi",
+              "id",
+              "it",
+              "ja",
+              "ko",
+              "pt-BR",
+              "pt-PT",
+              "ru",
+              "es-MX",
+              "es-ES",
+              "tr",
+              "vi"
+            ],
+            "description": "BCP-47 language code, or `auto` to let xAI detect the language.",
+            "order": 3
+          }
+        }
+      },
+      {
+        "title": "Polyvoice: Reading",
+        "order": 6,
+        "properties": {
+          "polyvoice.markdown.skipCodeBlocks": {
+            "type": "boolean",
+            "default": true,
+            "description": "When reading Markdown, skip fenced code blocks.",
+            "order": 1
+          },
+          "polyvoice.markdown.skipLinks": {
+            "type": "boolean",
+            "default": false,
+            "description": "When reading Markdown, strip URLs and keep only link text.",
+            "order": 2
+          }
+        }
+      },
+      {
+        "title": "Polyvoice: Cache",
+        "order": 7,
+        "properties": {
+          "polyvoice.cache.enabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "Cache synthesized audio on disk so identical selections aren't re-billed (cloud providers only).",
+            "order": 1
+          },
+          "polyvoice.cache.maxMB": {
+            "type": "number",
+            "default": 200,
+            "minimum": 0,
+            "description": "Maximum cache size on disk in megabytes (LRU eviction).",
+            "order": 2
+          }
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "node esbuild.config.js --production",
+    "watch": "node esbuild.config.js --watch",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "@types/vscode": "^1.90.0",
+    "@types/ws": "^8.18.1",
+    "@typescript-eslint/eslint-plugin": "^7.7.0",
+    "@typescript-eslint/parser": "^7.7.0",
+    "@typespec/ts-http-runtime": "^0.3.5",
+    "@vscode/vsce": "^2.27.0",
+    "esbuild": "^0.21.5",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "microsoft-cognitiveservices-speech-sdk": "^1.38.0",
+    "ws": "^8.21.0"
+  }
+}

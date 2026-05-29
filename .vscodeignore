@@ -1,0 +1,16 @@
+.vscode/**
+.vscode-test/**
+out/**
+src/**
+test/**
+docs/**
+.github/**
+.gitignore
+.eslintrc.json
+esbuild.config.js
+tsconfig.json
+**/*.map
+**/*.ts
+**/.DS_Store
+node_modules/**
+!node_modules/microsoft-cognitiveservices-speech-sdk/**
