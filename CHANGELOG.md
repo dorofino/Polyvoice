@@ -2,6 +2,9 @@
 
 All notable changes to Polyvoice will be documented in this file.
 
+## [0.1.17] - 2026-06-03
+
+- Diagnose silent Azure failures: SDK event tracing and 15s first-byte timeout
 ## [0.1.16] - 2026-06-03
 
 - Surface silent Azure errors: timeout + zero-bytes guard, comprehensive provider/player logging, new Polyvoice: Show Logs command, Show Logs button on error toasts

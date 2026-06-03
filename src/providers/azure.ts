@@ -53,6 +53,19 @@ export class AzureProvider implements TtsProvider {
     const synth = new sdk.SpeechSynthesizer(config, audioCfg);
     const ssml = buildSsml(text, voice, opts.rate ?? 1, opts.locale);
 
+    // Verbose SDK event tracing so we can see what's happening when nothing plays.
+    synth.synthesisStarted = (_s, _e) => this.logger.info("azure: event synthesisStarted");
+    synth.synthesizing = (_s, e) => this.logger.info(`azure: event synthesizing (+${e.result.audioData?.byteLength ?? 0} bytes)`);
+    synth.synthesisCompleted = (_s, e) => this.logger.info(`azure: event synthesisCompleted total=${e.result.audioData?.byteLength ?? 0} reason=${e.result.reason}`);
+    synth.SynthesisCanceled = (_s, e) => {
+      let detail = "";
+      try {
+        const c = sdk.CancellationDetails.fromResult(e.result);
+        detail = `reason=${c.reason} code=${c.ErrorCode} details=${c.errorDetails}`;
+      } catch { detail = `reason=${e.result.reason} errorDetails=${e.result.errorDetails}`; }
+      this.logger.error(`azure: event SynthesisCanceled ${detail}`);
+    };
+
     let synthError: Error | undefined;
     let synthDone = false;
     const done = new Promise<void>((resolve, reject) => {
@@ -71,7 +84,7 @@ export class AzureProvider implements TtsProvider {
             this.logger.error(`azure: ${synthError.message}`);
             reject(synthError);
           } else {
-            this.logger.info(`azure: synth complete (${result.audioData?.byteLength ?? "?"} bytes total)`);
+            this.logger.info(`azure: synth callback complete (${result.audioData?.byteLength ?? "?"} bytes total)`);
             resolve();
           }
           synth.close();
@@ -92,11 +105,32 @@ export class AzureProvider implements TtsProvider {
     signal.addEventListener("abort", onAbort);
 
     let yielded = 0;
+    let firstByteSeen = false;
+    const FIRST_BYTE_TIMEOUT_MS = 15000;
     try {
       const buf = new ArrayBuffer(8 * 1024);
       while (true) {
-        const n = await pull.read(buf);
+        // First-byte timeout: if the SDK never produces audio AND never calls
+        // the completion callback (happens with bad regions / network issues),
+        // pull.read() will hang forever. Race it against a timeout.
+        const readPromise = pull.read(buf);
+        const n: number = firstByteSeen
+          ? await readPromise
+          : await Promise.race([
+              readPromise,
+              new Promise<number>((_, rej) => setTimeout(
+                () => rej(new ProviderError(
+                  `Azure produced no audio within ${FIRST_BYTE_TIMEOUT_MS / 1000}s. Likely causes: network/proxy blocking wss://${region}.tts.speech.microsoft.com, invalid key, or wrong region. Check Polyvoice output channel for SDK events.`,
+                  this.id,
+                )),
+                FIRST_BYTE_TIMEOUT_MS,
+              )),
+            ]);
         if (n === 0) break;
+        if (!firstByteSeen) {
+          firstByteSeen = true;
+          this.logger.info(`azure: first audio byte arrived (${n} bytes)`);
+        }
         yielded += n;
         yield new Uint8Array(buf.slice(0, n));
       }
