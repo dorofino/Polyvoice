@@ -2,6 +2,9 @@
 
 All notable changes to Polyvoice will be documented in this file.
 
+## [0.1.18] - 2026-06-03
+
+- Add polyvoice.azure.endpoint setting for custom-subdomain Cognitive Services resources (corp VPN / private endpoint scenarios). Uses SpeechConfig.fromHost so traffic stays on whitelisted cognitiveservices.azure.com host.
 ## [0.1.17] - 2026-06-03
 
 - Diagnose silent Azure failures: SDK event tracing and 15s first-byte timeout

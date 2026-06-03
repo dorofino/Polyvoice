@@ -2,7 +2,7 @@
   "name": "polyvoice",
   "displayName": "Polyvoice — Read Aloud (Native, OpenAI, Azure, ElevenLabs, xAI)",
   "description": "One extension, every voice provider. Select text, press a key, hear it read aloud — through native OS TTS or your favorite cloud voice (OpenAI, Azure AI Foundry, ElevenLabs, xAI Grok).",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "publisher": "dorofino",
   "license": "MIT",
   "engines": {
@@ -280,8 +280,14 @@
           "polyvoice.azure.region": {
             "type": "string",
             "default": "eastus",
-            "markdownDescription": "🔑 **[Set Azure API Key →](command:polyvoice.setAzureKey)**  \n📝 Don't have one? **[Create a Speech resource in Azure Portal →](https://portal.azure.com/#create/Microsoft.CognitiveServicesSpeechServices)** then copy *Key 1* from *Keys and Endpoint*.  \n_Keys are stored encrypted in VS Code SecretStorage, never in settings.json._\n\nAzure Speech resource region (e.g. eastus, westeurope).",
+            "markdownDescription": "🔑 **[Set Azure API Key →](command:polyvoice.setAzureKey)**  \n📝 Don't have one? **[Create a Speech resource in Azure Portal →](https://portal.azure.com/#create/Microsoft.CognitiveServicesSpeechServices)** then copy *Key 1* from *Keys and Endpoint*.  \n_Keys are stored encrypted in VS Code SecretStorage, never in settings.json._\n\nAzure Speech resource region (e.g. eastus, westeurope). Ignored when `#polyvoice.azure.endpoint#` is set.",
             "order": 1
+          },
+          "polyvoice.azure.endpoint": {
+            "type": "string",
+            "default": "",
+            "description": "Optional Azure custom endpoint (e.g. a Custom Neural Voice deployment URL). Leave empty to use the regional default.",
+            "order": 3
           },
           "polyvoice.azure.voice": {
             "type": "string",
@@ -370,12 +376,6 @@
             ],
             "markdownDescription": "Default Azure neural voice. Overridden by the global `#polyvoice.voice#` setting when that is non-empty.\n\n⚠️ Voice availability depends on your Speech resource's **region**. If a voice errors with *'speaker not supported'*, the voice isn't deployed in your region — pick a different one or change `#polyvoice.azure.region#`.\n\n🔍 **Want the full live catalog (500+ voices) for *your* region?** Run **`Polyvoice: Select Voice`** from the Command Palette — it queries Azure directly so it always shows exactly what's available to you, including brand-new releases.",
             "order": 2
-          },
-          "polyvoice.azure.endpoint": {
-            "type": "string",
-            "default": "",
-            "description": "Optional Azure custom endpoint (e.g. a Custom Neural Voice deployment URL). Leave empty to use the regional default.",
-            "order": 3
           }
         }
       },

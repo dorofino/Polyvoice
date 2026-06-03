@@ -18,9 +18,24 @@ export class AzureProvider implements TtsProvider {
 
   async listVoices(): Promise<Voice[]> {
     const key = await this.secrets.require("azure");
-    const region = vscode.workspace.getConfiguration("polyvoice").get<string>("azure.region") || "eastus";
-    this.logger.info(`azure: listVoices region=${region}`);
-    const res = await fetch(`https://${region}.tts.speech.microsoft.com/cognitiveservices/voices/list`, {
+    const cfg = vscode.workspace.getConfiguration("polyvoice");
+    const region = cfg.get<string>("azure.region") || "eastus";
+    const endpointRaw = (cfg.get<string>("azure.endpoint") || "").trim();
+    let url: string;
+    if (endpointRaw) {
+      let origin: string;
+      try {
+        origin = new URL(endpointRaw.includes("://") ? endpointRaw : `https://${endpointRaw}`).origin;
+      } catch {
+        throw new ProviderError(`Invalid polyvoice.azure.endpoint: ${endpointRaw}`, this.id);
+      }
+      url = `${origin}/cognitiveservices/voices/list`;
+      this.logger.info(`azure: listVoices via custom endpoint ${origin}`);
+    } else {
+      url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
+      this.logger.info(`azure: listVoices region=${region}`);
+    }
+    const res = await fetch(url, {
       headers: { "Ocp-Apim-Subscription-Key": key },
     });
     if (!res.ok) {
@@ -39,14 +54,31 @@ export class AzureProvider implements TtsProvider {
 
   async *synthesize(text: string, opts: SynthesizeOptions, signal: AbortSignal): AsyncIterable<Uint8Array> {
     const key = await this.secrets.require("azure");
-    const region = vscode.workspace.getConfiguration("polyvoice").get<string>("azure.region") || "eastus";
+    const cfg = vscode.workspace.getConfiguration("polyvoice");
+    const region = cfg.get<string>("azure.region") || "eastus";
+    const endpointRaw = (cfg.get<string>("azure.endpoint") || "").trim();
 
-    const config = sdk.SpeechConfig.fromSubscription(key, region);
+    // Custom-subdomain Cognitive Services resources (e.g. corp accounts behind
+    // VPNs that only whitelist *.cognitiveservices.azure.com) must use fromHost.
+    // Accept any URL the user pastes — we strip everything except origin.
+    let config: sdk.SpeechConfig;
+    if (endpointRaw) {
+      let host: string;
+      try {
+        host = new URL(endpointRaw.includes("://") ? endpointRaw : `https://${endpointRaw}`).origin;
+      } catch {
+        throw new ProviderError(`Invalid polyvoice.azure.endpoint: ${endpointRaw}`, this.id);
+      }
+      this.logger.info(`azure: using custom host=${host}`);
+      config = sdk.SpeechConfig.fromHost(new URL(host), key);
+    } else {
+      config = sdk.SpeechConfig.fromSubscription(key, region);
+    }
     config.speechSynthesisOutputFormat = sdk.SpeechSynthesisOutputFormat.Audio24Khz48KBitRateMonoMp3;
-    const voice = opts.voice || vscode.workspace.getConfiguration("polyvoice").get<string>("azure.voice") || "en-US-AvaMultilingualNeural";
+    const voice = opts.voice || cfg.get<string>("azure.voice") || "en-US-AvaMultilingualNeural";
     config.speechSynthesisVoiceName = voice;
 
-    this.logger.info(`azure: synth start region=${region} voice=${voice} len=${text.length} chars`);
+    this.logger.info(`azure: synth start ${endpointRaw ? "endpoint=custom" : `region=${region}`} voice=${voice} len=${text.length} chars`);
 
     const pull = sdk.AudioOutputStream.createPullStream();
     const audioCfg = sdk.AudioConfig.fromStreamOutput(pull);
