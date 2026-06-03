@@ -179,8 +179,9 @@ if ($Notes) { $commitMsg += " - $Notes" }
 
 Invoke-Step "git add" { git add -A | Out-Null }
 Invoke-Step "git commit" { git commit -m $commitMsg | Out-Null }
-Invoke-Step "git tag" { git tag "v$next" | Out-Null }
-Invoke-Step "git push" { git push --follow-tags 2>&1 | Out-Null }
+Invoke-Step "git tag" { git tag -a "v$next" -m "v$next" | Out-Null }
+Invoke-Step "git push" { git push 2>&1 | Out-Null }
+Invoke-Step "git push tag" { git push origin "v$next" 2>&1 | Out-Null }
 Write-Ok "pushed v$next to origin"
 
 # --- 8. Publish to Marketplace -------------------------------------------
