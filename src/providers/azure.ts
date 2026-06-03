@@ -152,7 +152,9 @@ export class AzureProvider implements TtsProvider {
               readPromise,
               new Promise<number>((_, rej) => setTimeout(
                 () => rej(new ProviderError(
-                  `Azure produced no audio within ${FIRST_BYTE_TIMEOUT_MS / 1000}s. Likely causes: network/proxy blocking wss://${region}.tts.speech.microsoft.com, invalid key, or wrong region. Check Polyvoice output channel for SDK events.`,
+                  endpointRaw
+                    ? `Azure produced no audio within ${FIRST_BYTE_TIMEOUT_MS / 1000}s using custom endpoint ${endpointRaw}. Likely causes: invalid key, endpoint doesn't expose the Speech API, or network/proxy blocking websockets to that host.`
+                    : `Azure produced no audio within ${FIRST_BYTE_TIMEOUT_MS / 1000}s. Likely causes: network/proxy blocking wss://${region}.tts.speech.microsoft.com (set polyvoice.azure.endpoint to your custom Cognitive Services subdomain if you're behind a corporate VPN), invalid key, or wrong region.`,
                   this.id,
                 )),
                 FIRST_BYTE_TIMEOUT_MS,
