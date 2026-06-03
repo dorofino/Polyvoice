@@ -41,6 +41,7 @@ export function registerCommands(d: Deps): vscode.Disposable[] {
     vscode.commands.registerCommand("polyvoice.clearCache",             () => clearCache(d)),
     vscode.commands.registerCommand("polyvoice.configureShortcuts",      () => configureShortcuts()),
     vscode.commands.registerCommand("polyvoice.quickMenu",               () => quickMenu(d)),
+    vscode.commands.registerCommand("polyvoice.showLogs",                () => d.logger.show(false)),
   ];
 }
 
@@ -80,6 +81,8 @@ async function speak(d: Deps, mode: "selection" | "document" | "auto"): Promise<
   const cacheEnabled = cfg.get<boolean>("cache.enabled") ?? true;
   const cacheMax = cfg.get<number>("cache.maxMB") ?? 200;
 
+  d.logger.info(`speak: provider=${providerId} voice=${voice || "(default)"} rate=${rate} chars=${text.length} lang=${languageId ?? "?"}`);
+
   const provider = await d.registry.get(providerId);
   d.status.refresh("speaking");
 
@@ -87,8 +90,10 @@ async function speak(d: Deps, mode: "selection" | "document" | "auto"): Promise<
     // Direct-play providers (native OS TTS) speak through the speakers themselves.
     // No webview, no caching, no audio bytes flow back.
     if (provider.speak) {
+      d.logger.info(`speak: direct-play via ${provider.id}`);
       const abort = new AbortController();
       await provider.speak(text, { voice, rate, locale: languageId }, abort.signal);
+      d.logger.info(`speak: direct-play done`);
       return;
     }
 
@@ -101,6 +106,7 @@ async function speak(d: Deps, mode: "selection" | "document" | "auto"): Promise<
     if (cacheEnabled) {
       const hit = await d.cache.get(key);
       if (hit) {
+        d.logger.info(`speak: cache hit (${hit.length} bytes)`);
         await d.player.play(once(hit), provider.audio.mime);
         return;
       }
@@ -111,6 +117,7 @@ async function speak(d: Deps, mode: "selection" | "document" | "auto"): Promise<
     const teed = tee(provider.synthesize(text, { voice, rate, locale: languageId }, abort.signal), collected);
 
     await d.player.play(teed, provider.audio.mime);
+    d.logger.info(`speak: playback done (${collected.reduce((n, c) => n + c.length, 0)} bytes)`);
 
     if (cacheEnabled && collected.length) {
       const total = collected.reduce((n, c) => n + c.length, 0);
@@ -121,8 +128,11 @@ async function speak(d: Deps, mode: "selection" | "document" | "auto"): Promise<
       void d.cache.evictTo(cacheMax);
     }
   } catch (err) {
-    vscode.window.showErrorMessage(`Polyvoice: ${(err as Error).message}`);
+    const message = (err as Error).message;
+    d.logger.error(message);
     d.logger.error((err as Error).stack ?? String(err));
+    const choice = await vscode.window.showErrorMessage(`Polyvoice: ${message}`, "Show Logs");
+    if (choice === "Show Logs") d.logger.show(false);
   } finally {
     d.status.refresh("idle");
   }
@@ -239,6 +249,7 @@ async function quickMenu(d: Deps): Promise<void> {
     { label: "$(arrow-swap) Switch Provider",       description: "native, openai, azure, elevenlabs, xai", cmd: "polyvoice.selectProvider" },
     { label: "$(person) Select Voice",              description: "Pick a voice for the current provider", cmd: "polyvoice.selectVoice" },
     { label: "$(keyboard) Configure Shortcuts…",     description: "Assign any key to any Polyvoice command", cmd: "polyvoice.configureShortcuts" },
+    { label: "$(output) Show Logs",                 description: "Open the Polyvoice output channel",   cmd: "polyvoice.showLogs" },
   ];
   const pick = await vscode.window.showQuickPick(items, { placeHolder: "Polyvoice quick actions" });
   if (!pick) return;
@@ -263,8 +274,11 @@ async function speakRaw(d: Deps, text: string, languageId: string | undefined): 
     const abort = new AbortController();
     await d.player.play(provider.synthesize(text, { voice, rate, locale: languageId }, abort.signal), provider.audio.mime);
   } catch (err) {
-    vscode.window.showErrorMessage(`Polyvoice: ${(err as Error).message}`);
+    const message = (err as Error).message;
+    d.logger.error(message);
     d.logger.error((err as Error).stack ?? String(err));
+    const choice = await vscode.window.showErrorMessage(`Polyvoice: ${message}`, "Show Logs");
+    if (choice === "Show Logs") d.logger.show(false);
   } finally {
     d.status.refresh("idle");
   }

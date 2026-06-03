@@ -2,6 +2,9 @@
 
 All notable changes to Polyvoice will be documented in this file.
 
+## [0.1.16] - 2026-06-03
+
+- Surface silent Azure errors: timeout + zero-bytes guard, comprehensive provider/player logging, new Polyvoice: Show Logs command, Show Logs button on error toasts
 ## [0.1.15] - 2026-05-29
 
 - Add release pipeline script; slim VSIX (1198 -> ~306 files, 2.3MB -> 533KB)

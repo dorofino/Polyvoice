@@ -31,9 +31,15 @@ export class AudioPlayer implements vscode.Disposable {
       chunks.push(buf);
       total += buf.length;
     }
+    if (total === 0) {
+      this.logger.error("audio player: received 0 bytes from provider, nothing to play");
+      throw new Error("Audio provider returned no data. Check Polyvoice output channel for details.");
+    }
     await fs.writeFile(tmpFile, Buffer.concat(chunks, total));
+    this.logger.info(`audio player: wrote ${total} bytes -> ${tmpFile} (${ext})`);
 
     const proc = this.spawnPlayer(tmpFile, ext);
+    this.logger.info(`audio player: spawned pid=${proc.pid ?? "?"} on ${process.platform}`);
     this.current = { proc, file: tmpFile };
 
     return new Promise<void>((resolve, reject) => {
@@ -47,7 +53,9 @@ export class AudioPlayer implements vscode.Disposable {
       };
       proc.once("exit", (code) => {
         if (code !== 0 && code !== null) {
-          this.logger.warn(`audio player exited with code ${code}`);
+          this.logger.error(`audio player exited with code ${code} (likely playback failed silently)`);
+        } else {
+          this.logger.info(`audio player exited cleanly`);
         }
         finish();
       });

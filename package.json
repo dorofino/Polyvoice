@@ -2,7 +2,7 @@
   "name": "polyvoice",
   "displayName": "Polyvoice — Read Aloud (Native, OpenAI, Azure, ElevenLabs, xAI)",
   "description": "One extension, every voice provider. Select text, press a key, hear it read aloud — through native OS TTS or your favorite cloud voice (OpenAI, Azure AI Foundry, ElevenLabs, xAI Grok).",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "publisher": "dorofino",
   "license": "MIT",
   "engines": {
@@ -108,6 +108,14 @@
       {
         "command": "polyvoice.configureShortcuts",
         "title": "Polyvoice: Configure Keyboard Shortcuts"
+      },
+      {
+        "command": "polyvoice.quickMenu",
+        "title": "Polyvoice: Quick Menu"
+      },
+      {
+        "command": "polyvoice.showLogs",
+        "title": "Polyvoice: Show Logs"
       }
     ],
     "keybindings": [

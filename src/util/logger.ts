@@ -13,6 +13,11 @@ export class Logger implements vscode.Disposable {
   warn(msg: string)  { this.write("WARN",  msg); }
   error(msg: string) { this.write("ERROR", msg); }
 
+  /** Bring the Output panel forward focused on this channel. */
+  show(preserveFocus = true): void {
+    this.channel.show(preserveFocus);
+  }
+
   private write(level: string, msg: string): void {
     const ts = new Date().toISOString();
     this.channel.appendLine(`[${ts}] ${level} ${msg}`);
